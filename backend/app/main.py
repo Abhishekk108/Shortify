@@ -33,6 +33,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health", tags=["Health"])
+def health_check():
+    """Simple liveness probe."""
+    return {"status": "ok"}
+
+
 # Routers — redirect must be LAST so /{short_code} doesn't shadow /api/* routes
 app.include_router(urls.router, prefix="/api/urls", tags=["URLs"])
 app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
@@ -43,9 +49,3 @@ app.include_router(redirect.router)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all handler for unhandled exceptions."""
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
-
-
-@app.get("/health", tags=["Health"])
-def health_check():
-    """Simple liveness probe."""
-    return {"status": "ok"}
