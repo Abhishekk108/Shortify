@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.routers import analytics, redirect, urls
 
 app = FastAPI(
     title="Shortify API",
@@ -17,6 +19,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Routers — redirect must be last so /{short_code} doesn't shadow /api/* routes
+app.include_router(urls.router, prefix="/api/urls", tags=["URLs"])
+app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
+app.include_router(redirect.router)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch-all handler for unhandled exceptions."""
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/health", tags=["Health"])
