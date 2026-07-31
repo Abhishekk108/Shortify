@@ -1,10 +1,20 @@
+import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 
 export default function Navbar() {
+  const [menuOpen, setMenuOpen] = useState(false)
+
   const linkClass = ({ isActive }) =>
     isActive
       ? 'text-white font-semibold border-b-2 border-white pb-0.5'
       : 'text-blue-100 hover:text-white transition-colors'
+
+  const mobileLinkClass = ({ isActive }) =>
+    `block px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+      isActive
+        ? 'bg-blue-700 text-white'
+        : 'text-blue-100 hover:bg-blue-700 hover:text-white'
+    }`
 
   return (
     <nav className="bg-blue-600 shadow-md">
@@ -14,8 +24,8 @@ export default function Navbar() {
           ✂️ Shortify
         </Link>
 
-        {/* Nav links */}
-        <div className="flex gap-6 text-sm">
+        {/* Desktop nav links */}
+        <div className="hidden sm:flex gap-6 text-sm">
           <NavLink to="/" end className={linkClass}>
             Home
           </NavLink>
@@ -23,7 +33,49 @@ export default function Navbar() {
             Dashboard
           </NavLink>
         </div>
+
+        {/* Mobile hamburger */}
+        <button
+          className="sm:hidden text-white p-1.5 rounded-md hover:bg-blue-700
+            transition-colors"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d={menuOpen
+                ? 'M6 18L18 6M6 6l12 12'
+                : 'M4 6h16M4 12h16M4 18h16'} />
+          </svg>
+        </button>
       </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div
+          id="mobile-menu"
+          className="sm:hidden px-3 pb-3 space-y-1 bg-blue-600 border-t border-blue-500"
+        >
+          <NavLink
+            to="/"
+            end
+            className={mobileLinkClass}
+            onClick={() => setMenuOpen(false)}
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/dashboard"
+            className={mobileLinkClass}
+            onClick={() => setMenuOpen(false)}
+          >
+            Dashboard
+          </NavLink>
+        </div>
+      )}
     </nav>
   )
 }

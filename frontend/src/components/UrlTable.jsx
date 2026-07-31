@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { useToast } from './Toast'
 
 /**
  * UrlTable — displays a list of shortened URLs in a responsive table.
@@ -9,6 +10,7 @@ import { useState } from 'react'
  *   loading:   boolean
  */
 export default function UrlTable({ urls = [], onDelete, loading = false }) {
+  const { addToast } = useToast()
   const [confirmId, setConfirmId] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
 
@@ -24,7 +26,16 @@ export default function UrlTable({ urls = [], onDelete, loading = false }) {
       document.body.removeChild(el)
     }
     setCopiedId(id)
+    addToast('Link copied to clipboard!', 'success')
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  async function handleDelete(id, shortCode) {
+    setConfirmId(null)
+    const ok = await onDelete(id)
+    if (ok !== false) {
+      addToast(`"${shortCode}" deleted.`, 'info')
+    }
   }
 
   if (loading) {
@@ -140,7 +151,7 @@ export default function UrlTable({ urls = [], onDelete, loading = false }) {
                   <span className="inline-flex items-center gap-2">
                     <span className="text-xs text-gray-500">Delete?</span>
                     <button
-                      onClick={() => { onDelete(url.id); setConfirmId(null) }}
+                      onClick={() => { handleDelete(url.id, url.short_code); setConfirmId(null) }}
                       className="text-xs px-2 py-1 bg-red-600 text-white rounded
                         hover:bg-red-700 transition-colors"
                     >

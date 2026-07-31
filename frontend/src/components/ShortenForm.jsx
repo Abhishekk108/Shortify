@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import axiosClient from '../api/axiosClient'
+import { useToast } from './Toast'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
@@ -21,6 +22,7 @@ function isValidUrl(str) {
  *   onCreated: (urlObj) => void   called after a successful creation
  */
 export default function ShortenForm({ onCreated }) {
+  const { addToast } = useToast()
   const [longUrl, setLongUrl] = useState('')
   const [alias, setAlias] = useState('')
   const [result, setResult] = useState(null)   // created URL object
@@ -72,6 +74,7 @@ export default function ShortenForm({ onCreated }) {
       setLongUrl('')
       setAlias('')
       setErrors({})
+      addToast('Short link created!', 'success')
       if (onCreated) onCreated(data)
     } catch (err) {
       const detail = err?.response?.data?.detail
@@ -93,8 +96,6 @@ export default function ShortenForm({ onCreated }) {
     if (!result?.short_url) return
     try {
       await navigator.clipboard.writeText(result.short_url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     } catch {
       // fallback for browsers without clipboard API
       const el = document.createElement('input')
@@ -103,9 +104,10 @@ export default function ShortenForm({ onCreated }) {
       el.select()
       document.execCommand('copy')
       document.body.removeChild(el)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
+    setCopied(true)
+    addToast('Link copied to clipboard!', 'success')
+    setTimeout(() => setCopied(false), 2000)
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
