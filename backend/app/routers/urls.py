@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -14,12 +14,14 @@ from app.models.url import Url
 from app.schemas.url import UrlCreate, UrlListResponse, UrlResponse
 from app.services.shortener import get_unique_short_code
 from app.services.validator import validate_url
+from app.utils.rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.post("", status_code=201, response_model=UrlResponse)
-def create_short_url(payload: UrlCreate, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def create_short_url(payload: UrlCreate, request: Request, db: Session = Depends(get_db)):
     """Create a new shortened URL."""
     # Convert Pydantic HttpUrl to plain string
     original_url_str = str(payload.original_url)
