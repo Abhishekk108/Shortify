@@ -11,4 +11,18 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('recharts') || id.includes('d3-') || id.includes('victory')) {
+            return 'recharts'
+          }
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('react-router')) {
+            return 'vendor'
+          }
+        },
+      },
+    },
+  },
 })
