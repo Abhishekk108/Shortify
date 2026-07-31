@@ -42,8 +42,10 @@ function Skeleton() {
 function StatCard({ icon, label, value, sub }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm">
-      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">
-        {icon} {label}
+      <p className="flex items-center gap-1.5 text-xs text-gray-500 font-medium
+        uppercase tracking-wide mb-1">
+        <span className="text-blue-500">{icon}</span>
+        {label}
       </p>
       <p className="text-2xl font-bold text-gray-900">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
@@ -238,22 +240,49 @@ export default function AnalyticsPage() {
         {/* ── Stat cards ──────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard
-            icon="👆"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+              </svg>
+            }
             label="Total clicks"
             value={data.total_clicks}
           />
           <StatCard
-            icon="🌐"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945
+                     M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104
+                     0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064
+                     M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
             label="Unique IPs"
             value={uniqueIps}
           />
           <StatCard
-            icon="📅"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0
+                     00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            }
             label="First click"
             value={firstClick ? fmtShort(firstClick) : '—'}
           />
           <StatCard
-            icon="🕐"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
             label="Last click"
             value={lastClick ? fmtShort(lastClick) : '—'}
           />

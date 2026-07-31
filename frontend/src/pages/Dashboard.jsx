@@ -162,18 +162,43 @@ function SummaryBar() {
   if (!summary) return null
 
   const stats = [
-    { label: 'Total links', value: summary.total_links, icon: '🔗' },
-    { label: 'Total clicks', value: summary.total_clicks, icon: '👆' },
+    {
+      label: 'Total links',
+      value: summary.total_links,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101
+               m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Total clicks',
+      value: summary.total_clicks,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
+        </svg>
+      ),
+    },
     {
       label: 'Top link',
       value: summary.top_urls?.[0]?.short_code ?? '—',
-      sub: summary.top_urls?.[0]
-        ? `${summary.top_urls[0].click_count} clicks`
-        : null,
-      icon: '🏆',
-      href: summary.top_urls?.[0]
-        ? `/analytics/${summary.top_urls[0].id}`
-        : null,
+      sub: summary.top_urls?.[0] ? `${summary.top_urls[0].click_count} clicks` : null,
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0
+               0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0
+               0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      href: summary.top_urls?.[0] ? `/analytics/${summary.top_urls[0].id}` : null,
     },
   ]
 
@@ -182,12 +207,13 @@ function SummaryBar() {
       {stats.map(({ label, value, sub, icon, href }) => (
         <div key={label}
           className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">
-            {icon} {label}
+          <p className="flex items-center gap-1.5 text-xs text-gray-500 font-medium
+            uppercase tracking-wide mb-1">
+            {icon}
+            {label}
           </p>
           {href ? (
-            <Link to={href}
-              className="text-2xl font-bold text-blue-600 hover:underline">
+            <Link to={href} className="text-2xl font-bold text-blue-600 hover:underline">
               {value}
             </Link>
           ) : (
