@@ -7,6 +7,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.routers import analytics, redirect, urls
+from app.routers.auth import router as auth_router
 from app.utils.rate_limit import limiter
 
 app = FastAPI(
@@ -39,7 +40,8 @@ def health_check():
     return {"status": "ok"}
 
 
-# Routers — redirect must be LAST so /{short_code} doesn't shadow /api/* routes
+# Routers — auth and API routes first, redirect LAST (/{short_code} is a catch-all)
+app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(urls.router, prefix="/api/urls", tags=["URLs"])
 app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
 app.include_router(redirect.router)
