@@ -1,11 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { clearAuthToken } from '../api/axiosClient'
+import { clearAuthToken, isAuthenticated, subscribeToAuthChanges } from '../api/axiosClient'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [authenticated, setAuthenticated] = useState(isAuthenticated())
   const navigate = useNavigate()
-  const token = localStorage.getItem('shortify_access_token')
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthChanges((token) => {
+      setAuthenticated(Boolean(token))
+    })
+
+    return unsubscribe
+  }, [])
 
   const linkClass = ({ isActive }) =>
     isActive
@@ -44,7 +52,7 @@ export default function Navbar() {
           <NavLink to="/" end className={linkClass}>
             Home
           </NavLink>
-          {token ? (
+          {authenticated ? (
             <>
               <NavLink to="/dashboard" className={linkClass}>
                 Dashboard
@@ -101,7 +109,7 @@ export default function Navbar() {
           >
             Home
           </NavLink>
-          {token ? (
+          {authenticated ? (
             <>
               <NavLink
                 to="/dashboard"
