@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -18,12 +18,22 @@ class Url(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     click_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    # One-to-many: one URL has many Click records
-    clicks: Mapped[list["Click"]] = relationship(
+    # Owner — nullable so existing URLs (pre-auth) are preserved
+    user_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # Relationships
+    owner: Mapped["User | None"] = relationship("User", back_populates="urls")  # type: ignore[name-defined]
+
+    clicks: Mapped[list["Click"]] = relationship(  # type: ignore[name-defined]
         "Click",
         back_populates="url",
         cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:
-        return f"<Url id={self.id} short_code={self.short_code!r}>"
+        return f"<Url id={self.id} short_code={self.short_code!r} user_id={self.user_id}>"

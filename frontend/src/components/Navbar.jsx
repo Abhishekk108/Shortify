@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { clearAuthToken } from '../api/axiosClient'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const navigate = useNavigate()
+  const token = localStorage.getItem('shortify_access_token')
 
   const linkClass = ({ isActive }) =>
     isActive
@@ -15,6 +18,12 @@ export default function Navbar() {
         ? 'bg-blue-700 text-white'
         : 'text-blue-100 hover:bg-blue-700 hover:text-white'
     }`
+
+  function handleLogout() {
+    clearAuthToken()
+    setMenuOpen(false)
+    navigate('/login')
+  }
 
   return (
     <nav className="bg-blue-600 shadow-md">
@@ -31,13 +40,32 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav links */}
-        <div className="hidden sm:flex gap-6 text-sm">
+        <div className="hidden sm:flex gap-6 text-sm items-center">
           <NavLink to="/" end className={linkClass}>
             Home
           </NavLink>
-          <NavLink to="/dashboard" className={linkClass}>
-            Dashboard
-          </NavLink>
+          {token ? (
+            <>
+              <NavLink to="/dashboard" className={linkClass}>
+                Dashboard
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="text-blue-100 hover:text-white transition-colors"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className={linkClass}>
+                Login
+              </NavLink>
+              <NavLink to="/register" className={linkClass}>
+                Register
+              </NavLink>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -73,13 +101,40 @@ export default function Navbar() {
           >
             Home
           </NavLink>
-          <NavLink
-            to="/dashboard"
-            className={mobileLinkClass}
-            onClick={() => setMenuOpen(false)}
-          >
-            Dashboard
-          </NavLink>
+          {token ? (
+            <>
+              <NavLink
+                to="/dashboard"
+                className={mobileLinkClass}
+                onClick={() => setMenuOpen(false)}
+              >
+                Dashboard
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-3 text-sm font-medium rounded-lg text-blue-100 hover:bg-blue-700 hover:text-white"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink
+                to="/login"
+                className={mobileLinkClass}
+                onClick={() => setMenuOpen(false)}
+              >
+                Login
+              </NavLink>
+              <NavLink
+                to="/register"
+                className={mobileLinkClass}
+                onClick={() => setMenuOpen(false)}
+              >
+                Register
+              </NavLink>
+            </>
+          )}
         </div>
       )}
     </nav>

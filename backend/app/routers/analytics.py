@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.crud.url import get_url_by_id
 from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models.click import Click
@@ -24,10 +23,10 @@ def get_url_analytics(
 ):
     """
     Return full click history and stats for a single URL.
-
-    Requires: Bearer token in Authorization header.
+    Only accessible if the URL belongs to the authenticated user.
     """
-    url = get_url_by_id(db, id)
+    from app.crud.url import get_url_by_id as _get_url_by_id
+    url = _get_url_by_id(db, url_id=id, user_id=current_user.id)
     if url is None:
         raise HTTPException(status_code=404, detail="URL not found")
 
