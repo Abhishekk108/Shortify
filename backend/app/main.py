@@ -25,10 +25,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Rate limiting middleware
 app.add_middleware(SlowAPIMiddleware)
 
-# CORS — allow requests from the Vite frontend dev server
+# CORS — allow requests from the local Vite frontend dev server.
+# The dev server commonly runs on either localhost or 127.0.0.1, so we
+# allow both forms plus any same-host development port.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_origins=[settings.FRONTEND_ORIGIN, "http://127.0.0.1:5173"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
