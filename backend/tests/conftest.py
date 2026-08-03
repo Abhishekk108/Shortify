@@ -63,3 +63,26 @@ def client(db):
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def auth_client(client):
+    """
+    TestClient pre-loaded with a valid Bearer token.
+
+    Registers a throw-away user, logs in, and patches client.headers so
+    every subsequent request automatically carries the Authorization header.
+    Use this fixture for all tests that call protected endpoints.
+    """
+    client.post("/api/auth/register", json={
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "securepass1",
+    })
+    r = client.post("/api/auth/login", json={
+        "identifier": "testuser@example.com",
+        "password": "securepass1",
+    })
+    token = r.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+    return client

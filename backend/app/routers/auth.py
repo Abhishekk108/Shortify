@@ -3,6 +3,7 @@ app/routers/auth.py — Authentication endpoints.
 
 POST /api/auth/register  — create a new user account
 POST /api/auth/login     — verify credentials, return a JWT access token
+GET  /api/auth/me        — return the currently authenticated user
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -13,6 +14,8 @@ from app.crud.user import (
     get_user_by_username,
 )
 from app.database import get_db
+from app.dependencies.auth import get_current_user
+from app.models.user import User
 from app.schemas.auth import LoginRequest, Token
 from app.schemas.user import UserCreate, UserResponse
 from app.security import verify_password
@@ -95,3 +98,21 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
     access_token = create_access_token(data={"sub": user.email})
 
     return Token(access_token=access_token, token_type="bearer")
+
+
+# ── GET /api/auth/me ──────────────────────────────────────────────────────────
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get the currently authenticated user",
+)
+def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
+    """
+    Return the profile of the authenticated user.
+
+    Requires: Bearer token in Authorization header.
+    Returns the same shape as /register — id, username, email, created_at.
+    """
+    return current_user
