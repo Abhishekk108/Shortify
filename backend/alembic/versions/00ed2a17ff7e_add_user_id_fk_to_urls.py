@@ -24,7 +24,7 @@ def upgrade() -> None:
     with op.batch_alter_table('urls', schema=None) as batch_op:
         batch_op.add_column(sa.Column('user_id', sa.Integer(), nullable=True))
         batch_op.create_index(batch_op.f('ix_urls_user_id'), ['user_id'], unique=False)
-        batch_op.create_foreign_key(None, 'users', ['user_id'], ['id'], ondelete='SET NULL')
+        batch_op.create_foreign_key("fk_urls_user_id_users",  "users",["user_id"],["id"], ondelete='SET NULL')
 
     # ### end Alembic commands ###
 
