@@ -1,18 +1,19 @@
 # Shortify
 
-A full-stack URL shortener built with **FastAPI** and **React**. Users register/login via JWT, create short links, manage them from a protected dashboard, and view click analytics.
+A full-stack URL shortener built with **FastAPI** and **React**. Guests can shorten URLs publicly with a browser cookie-based `guest_id` for a 3-links-per-day limit, while registered users get unlimited link creation, a protected dashboard, analytics, and full link management.
 
 ---
 
 ## Features
 
-- **JWT Authentication** — Secure register/login with JWT tokens
-- **Protected Dashboard** — Access restricted to authenticated users
-- **User-specific URLs** — Each link tied to its owner
-- **URL Shortening** — Convert long URLs into short links
+- **Guest URL Creation** — Public URL shortening for anonymous users with a browser cookie `guest_id` and a 3-links-per-day limit
+- **Public URL Shortening** — Anyone can submit a long URL without logging in
+- **Unlimited Authenticated Creation** — Logged-in users can create links without the guest daily cap
+- **Protected Dashboard** — Authenticated users can manage, search, edit, and delete their links
+- **User-specific URLs** — Each link is tied to its owner, or to a guest cookie when anonymous
 - **Custom Aliases** — Optional memorable aliases
-- **Click Analytics** — Track clicks and summary stats
-- **Search & Delete** — Filter and remove links from the dashboard
+- **Click Analytics** — Track clicks and summary stats from the dashboard
+- **Landing Page Content** — Includes Features, How It Works, and FAQ sections
 - **Responsive UI** — Works across desktop and mobile
 
 ---
@@ -60,6 +61,13 @@ shortify/
 
 ---
 
+## Database Notes
+
+- The `urls` table supports both authenticated and anonymous link creation.
+- `user_id` remains nullable for guest-created links, while `guest_id` is stored as a nullable UUID-like identifier on the URL record for daily guest counting.
+
+---
+
 ## Backend Setup
 
 ```bash
@@ -96,7 +104,7 @@ npm run dev
 Set these in `backend/.env` (see `.env.example`):
 
 | Variable                      | Default                   | Description                     |
-| ----------------------------- | ------------------------- | -------------------------------- |
+| ----------------------------- | ------------------------- | ------------------------------- |
 | `DATABASE_URL`                | `sqlite:///./shortify.db` | SQLAlchemy DB connection string |
 | `BASE_DOMAIN`                 | `http://localhost:8000`   | Public domain for short URLs    |
 | `FRONTEND_ORIGIN`             | `http://localhost:5173`   | Allowed CORS origin             |
@@ -109,13 +117,36 @@ Set these in `backend/.env` (see `.env.example`):
 ## Authentication Flow
 
 ```text
-Register → Login → Receive JWT → Access Protected APIs
+Public shorten: Guest or authenticated request → Create short URL
+Protected flow: Register → Login → Receive JWT → Access dashboard and analytics
 ```
 
-1. Register via `/api/auth/register`
-2. Login via `/api/auth/login`
-3. Receive a JWT access token
-4. Send it as `Authorization: Bearer <token>` on protected requests
+1. Publicly shorten a URL via `POST /api/urls` without authentication
+2. Register via `/api/auth/register`
+3. Login via `/api/auth/login`
+4. Receive a JWT access token
+5. Send it as `Authorization: Bearer <token>` on protected requests
+
+> Public endpoints include redirect and anonymous URL creation. Protected endpoints include dashboard ownership, analytics, and account-scoped link management.
+
+---
+
+## Working
+
+Shortify follows a simple request lifecycle:
+
+1. The React frontend validates the submitted long URL and prepares a create request.
+2. FastAPI receives the request, validates the input again, generates a unique short code or uses a custom alias if provided, and stores the record in the database.
+3. The backend returns the newly created short URL to the frontend, where the user can copy or share it.
+4. When a visitor opens a short link, the redirect endpoint looks up the code, increments the click count, and issues an HTTP redirect to the original destination.
+5. Authenticated users can view analytics, manage their links, and access dashboard summaries tied to their account.
+
+```text
+React Frontend → FastAPI API → SQLite Database
+                      ↓
+                 Redirect flow:
+React user clicks /{short_code} → FastAPI lookup → click_count + 1 → HTTP 307 redirect
+```
 
 ---
 
@@ -123,26 +154,26 @@ Register → Login → Receive JWT → Access Protected APIs
 
 ### Authentication
 
-| Method | Endpoint              | Description             |
-| ------ | ---------------------- | ------------------------ |
-| POST   | `/api/auth/register`  | Create a new account     |
-| POST   | `/api/auth/login`     | Login, receive JWT       |
-| GET    | `/api/auth/me`        | Get current user         |
+| Method | Endpoint             | Description                   |
+| ------ | -------------------- | ----------------------------- |
+| POST   | `/api/auth/register` | Create a new account (public) |
+| POST   | `/api/auth/login`    | Login, receive JWT (public)   |
+| GET    | `/api/auth/me`       | Get current user (protected)  |
 
 ### URLs & Analytics
 
-| Method | Endpoint                 | Description                    |
-| ------ | ------------------------ | ------------------------------- |
-| GET    | `/health`                | Health check                    |
-| POST   | `/api/urls`              | Create a short URL              |
-| GET    | `/api/urls`              | List current user's URLs        |
-| GET    | `/api/urls/{id}`         | Get a single owned URL          |
-| DELETE | `/api/urls/{id}`         | Delete an owned URL             |
-| GET    | `/{short_code}`          | Redirect to destination         |
-| GET    | `/api/analytics/summary` | Dashboard summary analytics     |
+| Method | Endpoint                   | Description                                                   |
+| ------ | -------------------------- | ------------------------------------------------------------- |
+| GET    | `/health`                  | Health check (public)                                         |
+| POST   | `/api/urls`                | Create a short URL for guests or authenticated users (public) |
+| GET    | `/api/urls`                | List the current authenticated user's URLs (protected)        |
+| GET    | `/api/urls/{id}`           | Get a single owned URL (protected)                            |
+| DELETE | `/api/urls/{id}`           | Delete an owned URL (protected)                               |
+| GET    | `/{short_code}`            | Redirect to destination (public)                              |
+| GET    | `/api/analytics/summary`   | Dashboard summary analytics (protected)                       |
+| GET    | `/api/urls/{id}/analytics` | View analytics for a single owned URL (protected)             |
 
 ---
-
 
 ## Deployment
 
@@ -160,8 +191,8 @@ Also enable HTTPS, set a real `BASE_DOMAIN`, and rotate the JWT secret.
 ## Future Improvements
 
 - Password reset and email verification
-- Role-based authorization for admin operations
-- Time-series analytics and detailed click reports
+- Admin moderation controls and stronger abuse-protection tooling
+- Time-series analytics and richer click reports
 - Profile editing and account deletion
 - Frontend auth flow and route guard tests
 
