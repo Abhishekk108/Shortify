@@ -100,11 +100,12 @@ class TestGetMe:
 # ── Protected URL endpoints ───────────────────────────────────────────────────
 
 class TestProtectedUrlEndpoints:
-    """All /api/urls endpoints must return 401 without a valid token."""
+    """Protected ownership endpoints remain authenticated; guest shorten creation is public."""
 
-    def test_post_urls_requires_auth(self, client):
+    def test_post_urls_is_public_for_guests(self, client):
         r = client.post("/api/urls", json={"original_url": "https://example.com"})
-        assert r.status_code == 401
+        assert r.status_code == 201
+        assert "short_code" in r.json()
 
     def test_get_urls_requires_auth(self, client):
         r = client.get("/api/urls")

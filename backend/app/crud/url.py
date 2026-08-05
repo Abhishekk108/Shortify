@@ -6,7 +6,7 @@ list_urls() filters by user_id so each user only sees their own links.
 The redirect lookup (get_url_by_code) remains unscoped — it is intentionally
 public so anyone visiting a short link is redirected correctly.
 """
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import func, update
 from sqlalchemy.orm import Session
@@ -22,22 +22,18 @@ def create_url(
     original_url: str,
     short_code: str,
     user_id: int | None = None,
+    guest_id: str | None = None,
     custom_alias: str | None = None,
     expires_at: datetime | None = None,
 ) -> Url:
-    """
-    Create and persist a new Url owned by *user_id*.
-
-    Args:
-        user_id: The id of the authenticated user creating this URL.
-                 Stored as a FK so the URL is always scoped to its owner.
-    """
+    """Create and persist a new Url. Pass either user_id (authenticated) or guest_id (anonymous)."""
     url = Url(
         original_url=original_url,
         short_code=short_code,
         custom_alias=custom_alias,
         expires_at=expires_at,
         user_id=user_id,
+        guest_id=guest_id,
     )
     db.add(url)
     db.commit()
@@ -102,7 +98,11 @@ def list_urls(
     return query.order_by(Url.created_at.desc()).offset(skip).limit(limit).all()
 
 
-def count_urls(db: Session, user_id: int | None = None, search: str | None = None) -> int:
+def count_urls(
+    db: Session,
+    user_id: int | None = None,
+    search: str | None = None,
+) -> int:
     """Return the total count of URLs, optionally filtered to the owner *user_id*."""
     query = db.query(func.count(Url.id))
     if user_id is not None:
@@ -115,6 +115,23 @@ def count_urls(db: Session, user_id: int | None = None, search: str | None = Non
             | func.lower(Url.custom_alias).like(pattern)
         )
     return query.scalar() or 0
+
+
+def count_guest_urls_today(db: Session, guest_id: str) -> int:
+    """
+    Count how many URLs this guest has created for the current UTC calendar day.
+    The count is keyed by the guest cookie and by the URL's created_at date.
+    """
+    today_utc = datetime.utcnow().date()
+    return (
+        db.query(func.count(Url.id))
+        .filter(
+            Url.guest_id == guest_id,
+            func.date(Url.created_at) == today_utc,
+        )
+        .scalar()
+        or 0
+    )
 
 
 # ── Delete (scoped to owner) ──────────────────────────────────────────────────

@@ -18,10 +18,17 @@ class Url(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     click_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    # Owner — nullable so existing URLs (pre-auth) are preserved
+    # Owner — nullable (pre-auth URLs have no owner)
     user_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # Guest identifier — UUID set via cookie for unauthenticated visitors
+    guest_id: Mapped[str | None] = mapped_column(
+        String(36),
         nullable=True,
         index=True,
     )

@@ -1,13 +1,16 @@
 """
-app/routers/urls.py — URL management endpoints (all require authentication).
+app/routers/urls.py — URL management endpoints.
 
-Every operation is scoped to the authenticated user — users can only
-see, create, and delete their own URLs.
+POST /api/urls  — public (guests allowed, 3/day limit) OR authenticated (unlimited)
+GET/DELETE      — authenticated only, scoped to the current user
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+import uuid
+
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 
 from app.crud.url import (
+    count_guest_urls_today,
     count_urls,
     create_url,
     delete_url,
@@ -16,7 +19,7 @@ from app.crud.url import (
     list_urls,
 )
 from app.database import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_user, get_current_user_optional
 from app.models.user import User
 from app.schemas.url import UrlCreate, UrlListResponse, UrlResponse
 from app.services.shortener import get_unique_short_code
@@ -25,37 +28,85 @@ from app.utils.rate_limit import limiter
 
 router = APIRouter()
 
+GUEST_DAILY_LIMIT = 3
+GUEST_COOKIE_NAME = "shortify_guest_id"
+GUEST_LIMIT_MESSAGE = (
+    "Guest limit reached. Create a free account for unlimited link creation and analytics."
+)
+
 
 @router.post("", status_code=201, response_model=UrlResponse)
-@limiter.limit("20/minute")
+@limiter.limit("100/minute")
 def create_short_url(
     payload: UrlCreate,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
+    # Read existing guest_id cookie (None if first visit or logged in)
+    shortify_guest_id: str | None = Cookie(default=None),
 ):
-    """Create a shortened URL owned by the authenticated user."""
-    original_url_str = str(payload.original_url)
+    """
+    Create a shortened URL.
 
+    - Authenticated users: unlimited, URL is owned by the user.
+    - Guests: max 3 links per calendar day (UTC), identified by a UUID cookie.
+    """
+    # ── Validate the target URL ───────────────────────────────────────────────
     try:
-        cleaned_url = validate_url(original_url_str)
+        cleaned_url = validate_url(str(payload.original_url))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
+    # ── Custom alias collision check ──────────────────────────────────────────
     if payload.custom_alias:
         if get_url_by_code(db, payload.custom_alias) is not None:
             raise HTTPException(status_code=409, detail="Alias already in use")
 
     short_code = payload.custom_alias if payload.custom_alias else get_unique_short_code(db)
 
-    return create_url(
+    # ── Authenticated path ────────────────────────────────────────────────────
+    if current_user is not None:
+        url = create_url(
+            db,
+            original_url=cleaned_url,
+            short_code=short_code,
+            user_id=current_user.id,
+            custom_alias=payload.custom_alias,
+            expires_at=payload.expires_at,
+        )
+        return url
+
+    # ── Guest path ─────────────────────────────────────────────────────────────
+    # Resolve or mint the guest_id
+    guest_id = shortify_guest_id
+    is_new_guest = guest_id is None
+    if is_new_guest:
+        guest_id = str(uuid.uuid4())
+
+    # Enforce daily limit
+    if count_guest_urls_today(db, guest_id) >= GUEST_DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail=GUEST_LIMIT_MESSAGE)
+
+    url = create_url(
         db,
         original_url=cleaned_url,
         short_code=short_code,
-        user_id=current_user.id,
+        guest_id=guest_id,
         custom_alias=payload.custom_alias,
         expires_at=payload.expires_at,
     )
+
+    # Set the cookie on the response (1 year, httponly, samesite=lax)
+    response.set_cookie(
+        key=GUEST_COOKIE_NAME,
+        value=guest_id,
+        max_age=365 * 24 * 60 * 60,
+        httponly=True,
+        samesite="lax",
+        secure=False,   # set True in production behind HTTPS
+    )
+    return url
 
 
 @router.get("", status_code=200, response_model=UrlListResponse)

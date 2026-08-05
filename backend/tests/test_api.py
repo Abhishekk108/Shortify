@@ -134,6 +134,25 @@ class TestDeleteUrl:
         assert r.status_code == 404
 
 
+class TestGuestLimit:
+    def test_guest_limit_returns_429_after_three_links(self, client):
+        for i in range(3):
+            r = client.post("/api/urls", json={"original_url": f"https://guest-limit-{i}.com"})
+            assert r.status_code == 201
+            assert r.cookies.get("shortify_guest_id") is not None
+
+        blocked = client.post("/api/urls", json={"original_url": "https://guest-limit-blocked.com"})
+        assert blocked.status_code == 429
+        assert blocked.json()["detail"] == (
+            "Guest limit reached. Create a free account for unlimited link creation and analytics."
+        )
+
+    def test_logged_in_user_is_not_affected_by_guest_limit(self, auth_client):
+        for i in range(4):
+            r = auth_client.post("/api/urls", json={"original_url": f"https://auth-free-{i}.com"})
+            assert r.status_code == 201
+
+
 # ── GET /{short_code} — redirect (public) ─────────────────────────────────────
 
 class TestRedirect:

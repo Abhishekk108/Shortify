@@ -5,6 +5,7 @@ const AUTH_CHANGE_EVENT = 'shortify_auth_changed'
 
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000',
+  withCredentials: true,   // send cookies (guest_id) on every request
   headers: {
     'Content-Type': 'application/json',
   },

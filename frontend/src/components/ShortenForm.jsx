@@ -77,11 +77,13 @@ export default function ShortenForm({ onCreated }) {
       addToast('Short link created!', 'success')
       if (onCreated) onCreated(data)
     } catch (err) {
+      const status = err?.response?.status
       const detail = err?.response?.data?.detail
-      if (typeof detail === 'string') {
+      if (status === 429 && typeof detail === 'string') {
+        setApiError(detail)
+      } else if (typeof detail === 'string') {
         setApiError(detail)
       } else if (Array.isArray(detail)) {
-        // Pydantic validation error array
         setApiError(detail.map((d) => d.msg).join(', '))
       } else {
         setApiError('Something went wrong. Please try again.')
