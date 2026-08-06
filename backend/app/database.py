@@ -3,15 +3,14 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from app.config import settings
 
-
-# SQLite requires check_same_thread=False to work with FastAPI's async workers
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-
+# PostgreSQL uses connection pooling by default — no driver-specific
+# connect_args are needed.  The old SQLite check_same_thread workaround
+# has been removed; psycopg2 is thread-safe out of the box.
 engine = create_engine(
     settings.DATABASE_URL,
-    connect_args=connect_args,
+    # pool_pre_ping keeps stale connections from causing errors after a
+    # database restart or network interruption.
+    pool_pre_ping=True,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

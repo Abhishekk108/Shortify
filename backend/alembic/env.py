@@ -19,7 +19,7 @@ if backend_dir not in sys.path:
 # table definitions are registered on Base.metadata before autogenerate runs.
 # ---------------------------------------------------------------------------
 from app.database import Base          # noqa: E402
-import app.models                      # noqa: E402, F401  — registers Url & Click
+import app.models                      # noqa: E402, F401  — registers all models
 from app.config import settings        # noqa: E402
 
 # Alembic Config object (gives access to values in alembic.ini).
@@ -40,9 +40,8 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
-    This configures the context with just a URL and not an Engine, though an
-    Engine is acceptable here as well.  By skipping the Engine creation we
-    don't even need a DBAPI to be available.
+    Configures the context with just a URL so no live database connection
+    is required.  Useful for generating SQL scripts to review or apply manually.
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -50,7 +49,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # required for SQLite ALTER TABLE support
+        # render_as_batch is NOT set — it is a SQLite-only workaround for
+        # ALTER TABLE limitations and must not be used with PostgreSQL.
     )
 
     with context.begin_transaction():
@@ -60,8 +60,8 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    In this scenario we need to create an Engine and associate a connection
-    with the context.
+    Creates an Engine, connects to the database, and runs all pending
+    migrations in a transaction.
     """
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -73,7 +73,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,  # required for SQLite ALTER TABLE support
+            # render_as_batch removed — not needed for PostgreSQL.
         )
 
         with context.begin_transaction():
