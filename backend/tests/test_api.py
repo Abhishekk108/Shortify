@@ -1,6 +1,6 @@
 """
 Integration tests for the FastAPI endpoints.
-Uses TestClient with an in-memory SQLite DB (see conftest.py).
+# Uses TestClient with a PostgreSQL-backed test database fixture setup.
 
 All protected endpoints use the `auth_client` fixture which automatically
 attaches a valid Bearer token to every request.

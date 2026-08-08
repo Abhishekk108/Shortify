@@ -1,6 +1,6 @@
 """
 Integration tests for POST /api/auth/register and POST /api/auth/login.
-Uses the shared conftest.py fixtures (in-memory SQLite, per-test rollback).
+Uses the shared conftest.py fixtures (PostgreSQL-backed per-test rollback).
 """
 import pytest
 

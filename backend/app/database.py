@@ -3,13 +3,11 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from app.config import settings
 
-# PostgreSQL uses connection pooling by default — no driver-specific
-# connect_args are needed.  The old SQLite check_same_thread workaround
-# has been removed; psycopg2 is thread-safe out of the box.
+# PostgreSQL uses connection pooling by default. No SQLite-only driver
+# connection options are needed. psycopg2 is safe for the FastAPI session
+# lifecycle here, so the engine is created directly with PostgreSQL settings.
 engine = create_engine(
     settings.DATABASE_URL,
-    # pool_pre_ping keeps stale connections from causing errors after a
-    # database restart or network interruption.
     pool_pre_ping=True,
 )
 

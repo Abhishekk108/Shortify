@@ -1,9 +1,11 @@
 """
 Shared pytest fixtures for unit and integration tests.
 
-Uses an in-memory SQLite database so tests are fully isolated —
-nothing touches the real shortify.db file.
+The backend test database is PostgreSQL-backed and must be supplied via the
+TEST_DATABASE_URL environment setting. No SQLite-specific options are used.
 """
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -12,12 +14,16 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base, get_db
 from app.main import app
 
-# ── In-memory SQLite for every test run ───────────────────────────────────────
-TEST_DATABASE_URL = "sqlite:///:memory:"
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+if not TEST_DATABASE_URL:
+    raise RuntimeError(
+        "TEST_DATABASE_URL is required for PostgreSQL-backed pytest integration. "
+        "Set it in the active environment or .env file."
+    )
 
 engine = create_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    pool_pre_ping=True,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
