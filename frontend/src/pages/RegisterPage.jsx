@@ -3,6 +3,34 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import axiosClient, { setAuthToken } from '../api/axiosClient'
 import { useToast } from '../components/Toast'
 
+function formatValidationError(detail) {
+  if (Array.isArray(detail)) {
+    const messages = detail.map((issue) => {
+      const location = Array.isArray(issue?.loc) ? issue.loc.slice(1).join(' / ') : ''
+      const message = issue?.msg ?? 'Invalid value'
+      return location ? `${location}: ${message}` : message
+    })
+
+    return messages.join(' ')
+  }
+
+  if (typeof detail === 'string') {
+    return detail
+  }
+
+  if (detail && typeof detail === 'object') {
+    if (typeof detail.message === 'string') {
+      return detail.message
+    }
+
+    if (Array.isArray(detail.errors)) {
+      return detail.errors.map((issue) => issue?.msg ?? 'Invalid value').join(' ')
+    }
+  }
+
+  return 'Validation failed. Please check the required fields.'
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { addToast } = useToast()
@@ -23,11 +51,15 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await axiosClient.post('/api/auth/register', {
+      const registerResponse = await axiosClient.post('/api/auth/register', {
         username,
         email,
         password,
       })
+
+      if (registerResponse?.status !== 201) {
+        throw new Error(`Unexpected registration status: ${registerResponse?.status ?? 'unknown'}`)
+      }
 
       const { data } = await axiosClient.post('/api/auth/login', {
         identifier: email,
@@ -38,8 +70,20 @@ export default function RegisterPage() {
       addToast('Account created and logged in.', 'success')
       navigate('/dashboard')
     } catch (err) {
+      const status = err?.response?.status
       const detail = err?.response?.data?.detail
-      setError(typeof detail === 'string' ? detail : 'Registration failed. Please try again.')
+
+      if (status === 422) {
+        setError(`Validation error: ${formatValidationError(detail)}`)
+      } else if (status === 409) {
+        setError('username/email already exists. Please choose another username or email.')
+      } else if (typeof detail === 'string') {
+        setError(detail)
+      } else if (err?.message) {
+        setError(err.message)
+      } else {
+        setError('Registration failed. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
